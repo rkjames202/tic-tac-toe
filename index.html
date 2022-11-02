@@ -9,9 +9,32 @@
     <script defer src="script.js"></script>
 </head>
 <body>
-    <div class="header-bar">Tic-Tac-Toe</div>
+    <div class="header-bar">
+        <p>Tic-Tac-Toe</p>
+    </div>
     <div class="main-content">
-        <p></p>
+        <div class="player-menu">
+            <div>
+                <label for="player1-name">Player 1 Name (X):</label>
+                <input type="text" name="player1-name" id="player1-name" placeholder="Name">
+            </div>
+            
+            <div>
+                <label for="player2-name">Player 2 Name (O):</label>
+                <input type="text" name="player2-name" id="player2-name" placeholder="Name">
+            </div>
+            <button class="start-button">Start Game</button>
+        </div>   
+        <!--Turn this into div containing player turn, wins and ties-->
+        <div class="game-details">
+            <div class="scoreboard">
+                <p>Score</p>
+                <div class="playerX-wins"></div>
+                <div class="playerO-wins"></div>
+                <div class="ties">Ties: </div>
+            </div>
+            <p class="game-status"></p>
+        </div>
         <div class="gameboard">
             <div class="row-1">
                <div class="cell-1"></div>
@@ -28,7 +51,9 @@
                 <div class="cell-2"></div>
                 <div class="cell-3"></div>
             </div>
+            
         </div>
+        <button class="restart-button">Restart </button>
     </div>
 </body>
 </html>
