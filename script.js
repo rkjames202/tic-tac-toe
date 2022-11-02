@@ -1,27 +1,41 @@
 /**factory function */
-//TODO: Create name for player
-const player = (marker, name) => {
-    //Let player add their marker to board
-    return {marker, name};
+const Player = (marker, name) => {
+
+    if(!name.trim()){
+        name = "Anonymous";
+    }
+
+    let _wins = 0;
+
+    function incrementWins(){
+        _wins++;
+    }
+
+    function getWins(){
+        return _wins;
+    }
+
+    function resetWins(){
+        _wins = 0;
+    }
+
+    return {marker, name, incrementWins, getWins, resetWins};
 };
 
-let playerX = player("x", "John");
-let playerO = player("o", "Doe");
-
 /**module */
-let gameBoard = (function() {
+let GameBoard = (function() {
 
-
+//put some of these into player() as private properties
+    let _playerX;
+    let _playerO;
     let _gameBoard = [];
     let _moveCount = 0;
-    let _playerXWins = 0;
-    let _playerOWins = 0;
     let _ties = 0;
+    //TODO: Give winning cells an effect on win
     let _winningCellsX = [];
     let _winningCellsO = [];
 
     function _createGameBoard(){
-        
          const row1 = document.querySelectorAll(".row-1 > [class*='cell']");
          const row2 = document.querySelectorAll(".row-2 > [class*='cell']");
          const row3 = document.querySelectorAll(".row-3 > [class*='cell']");
@@ -30,15 +44,23 @@ let gameBoard = (function() {
 
     }
 
+    function _createGameControl(){
+        const startButton = document.querySelector(".start-button");
+        startButton.addEventListener("click", _displayGame);
+
+        const restartButton = document.querySelector(".restart-button");
+        restartButton.addEventListener("click", _restartGame);
+    }
+
 
     function _addCellListeners(playerMarker){ 
         _gameBoard.forEach((row) =>{
             row.forEach((cell) =>{
                 //Test if cell has x or o in it already
-                if(playerMarker === "x"){
+                if(playerMarker === "X"){
                     cell.removeEventListener('click', _placeO);
                     cell.addEventListener('click', _placeX);         
-                } else if(playerMarker === "o"){
+                } else if(playerMarker === "O"){
                     cell.removeEventListener('click', _placeX);
                     cell.addEventListener('click', _placeO);
                 }
@@ -48,10 +70,10 @@ let gameBoard = (function() {
 
     function _placeX(){     
         if(!this.innerText){
-            this.innerText = "x";
-            _addCellListeners("o");
+            this.innerText = "X";
+            _addCellListeners("O");
             _moveCount++;
-            _showCurrentPlayer(playerO.name);
+            _showCurrentPlayer(_playerO);
         }
    
 
@@ -62,10 +84,10 @@ let gameBoard = (function() {
 
     function _placeO(){
         if(!this.innerText){
-            this.innerText = "o";
-            _addCellListeners("x");
+            this.innerText = "O";
+            _addCellListeners("X");
             _moveCount++;
-            _showCurrentPlayer(playerX.name);
+            _showCurrentPlayer(_playerX);
         }
 
         if (_moveCount >= 5){
@@ -78,22 +100,23 @@ let gameBoard = (function() {
         let playerOCount;
         let winnerFound = false;
 
+        function countOccurrences(){
+            winnerFound = playerXCount === 3 || playerOCount === 3 ? true : false;
+        }
+
         //if any players gets a row of their marker
         for (let i = 0; i < _gameBoard.length && winnerFound === false; i++){
             playerXCount = 0;
             playerOCount = 0;
             _gameBoard[i].forEach((cell) => {
-                if(cell.innerText === 'x'){
+                if(cell.innerText === 'X'){
                     playerXCount++;
-                } else if (cell.innerText === 'o'){
+                } else if (cell.innerText === 'O'){
                     playerOCount++;
                 }
             });
 
-            //Put inside compare occurences function
-            if(playerXCount === 3 || playerOCount === 3){
-                winnerFound = true;
-            }
+            countOccurrences();
         }
 
         //if any player get a column of their marker
@@ -105,18 +128,16 @@ let gameBoard = (function() {
             //Row control
             for (let n = 0; n < _gameBoard.length; n++){
 
-                if(_gameBoard[n][i].innerText === "x"){
+                if(_gameBoard[n][i].innerText === "X"){
                     playerXCount++
     
-                } else if(_gameBoard[n][i].innerText === "o"){
+                } else if(_gameBoard[n][i].innerText === "O"){
                     playerOCount++;
                 }
             }
             
-            if(playerXCount === 3 || playerOCount === 3){
-                winnerFound = true; 
-            }
-
+            countOccurrences();
+    
         }
         
         //Check right diagonal
@@ -125,14 +146,14 @@ let gameBoard = (function() {
             playerOCount = 0;
        }
         for(let i = 0; i < _gameBoard.length && winnerFound === false; i++){
-            if(_gameBoard[i][i].innerText === "x"){
+            if(_gameBoard[i][i].innerText === "X"){
                 playerXCount++;
-            } else if (_gameBoard[i][i].innerText === "o"){
+            } else if (_gameBoard[i][i].innerText === "O"){
                 playerOCount++;
             }
         }
 
-        //Check right diagonal winner
+        //Check for right diagonal winner
         if(playerXCount === 3 || playerOCount === 3){
             winnerFound = true;
         }
@@ -144,48 +165,61 @@ let gameBoard = (function() {
         }
         
         for(let i = 0; i < _gameBoard.length && winnerFound === false; i++){
-            if(_gameBoard[i][Math.abs(i - 2)].innerText === "x"){
+            if(_gameBoard[i][Math.abs(i - 2)].innerText === "X"){
                 playerXCount++;
                 //Move over to the left one cell on each iteration
-            } else if (_gameBoard[i][Math.abs(i - 2)].innerText === "o"){
+            } else if (_gameBoard[i][Math.abs(i - 2)].innerText === "O"){
                 playerOCount++;
             }
         }
+            
+           countOccurrences();
 
-        if(playerXCount === 3 || playerOCount === 3){
-            winnerFound = true;
-        }
 
         //Print and return winner
         if(playerXCount === 3){
-            _printWinner(playerX.name);
-            _playerXWins++;
+            _printGameResult(_playerX.name);
+            _playerX.incrementWins();
+            _updateScore();
             _restartRound();
         } else if(playerOCount === 3) { 
-            _printWinner(playerO.name);
-            _playerOWins++;
+            _printGameResult(_playerO.name);
+           _playerO.incrementWins();
+           _updateScore();
             _restartRound();
         } else if (_moveCount === 9){
-            _printWinner("tie");
+            _printGameResult("tie");
             _restartRound();
             _ties++;
+            _updateScore();
         }
     }
 
-    function _showCurrentPlayer(name){
-        const displayPlayer = document.querySelector(".main-content > p");
-        displayPlayer.innerText = `${name}'s Turn`;
+    function _showCurrentPlayer(player){
+        const displayPlayer = document.querySelector(".game-status");
+        displayPlayer.innerText = `${player.name} (${player.marker})'s Turn`;
     }
 
-    function _printWinner(name){
-        const displayResult = document.querySelector(".main-content > p");
-        
-        if(name === "tie"){
+    function _updateScore(){
+        const playerXWins = document.querySelector(".playerX-wins");
+        const playerOWins = document.querySelector(".playerO-wins");
+        const ties = document.querySelector(".ties");
+
+        playerXWins.innerText = `${_playerX.name}: ${_playerX.getWins()}`;
+        playerOWins.innerText = `${_playerO.name}: ${_playerO.getWins()}`;
+        ties.innerText = `Ties: ${_ties}`;
+    }
+
+    function _printGameResult(result){
+        const displayResult = document.querySelector(".game-status");
+
+        if(result === "tie"){
             displayResult.innerText = `It's a tie!`;
             return;
         }
 
-        displayResult.innerText = `${name} Wins!`;
+        //Print winner of round
+        displayResult.innerText = `${result} Wins!`;
     }
 
     function _restartRound(){
@@ -203,8 +237,8 @@ let gameBoard = (function() {
             _gameBoard.forEach((row) => {
                 row.forEach((cell) => {
                     cell.innerText = "";
-                    _showCurrentPlayer(playerX.name);
-
+                    _showCurrentPlayer(_playerX);
+                    _addCellListeners(_playerX.marker);
                     cells.forEach((cell) => {
                         cell.classList.remove("noClick");
                     });
@@ -212,38 +246,66 @@ let gameBoard = (function() {
             });
         }, 2000);
 
-       
     
     }
 
+    function _createPlayers(name1, name2){
+        _playerX = Player("X", name1);
+        _playerO = Player("O", name2);
+    }
+
     function _restartGame(){
-        _playerXWins = 0;
-        _playerXWins = 0;   
+        _playerX.resetWins();
+        _playerO.resetWins();
         _ties = 0;
+        _moveCount = 0;
+
+        _gameBoard.forEach((row) => {
+            row.forEach((cell) => {
+                cell.innerText = "";
+            });
+        });
+
+        _updateScore();
+        _addCellListeners(_playerX.marker);
+        _showCurrentPlayer(_playerX);
+    }
+
+    function _displayGame(){
+        const gameBoard = document.querySelector(".gameboard");
+        const gameDetails = document.querySelector(".game-details");
+        const playerMenu = document.querySelector(".player-menu");
+        const restartButton = document.querySelector(".restart-button");
+        const name1 = document.querySelector("#player1-name").value;
+        const name2 = document.querySelector("#player2-name").value;
+
+        //Add input fields and hide them on game start
+        gameBoard.style.visibility = "visible";
+        gameDetails.style.display = "block"
+        playerMenu.style.display= "none"
+        restartButton.style.display = "block";
+        _createPlayers(name1 ,name2);
+        _showCurrentPlayer(_playerX);
+        _addCellListeners(_playerX.marker);
+        _updateScore();
+
     }
 
     function playGame(){
-
-        const startButton = 
-
         _createGameBoard();
-        _showCurrentPlayer(playerX.name);
-        _addCellListeners(playerX.marker);
-        
+        _createGameControl();
     }
 
 
     return {playGame};
 })();
 
-gameBoard.playGame();
+GameBoard.playGame();
 
 /**
- * Commit
- * Add check for tie
- * Add round win counter
+ * Commit along the way
+ * Add effect to cells that containing winning markers
  * Add button to restart game
- * Add winner screen (first to 3 wins)
  * Commit along the way
  * Let play pick between playing against person and AI
  */
