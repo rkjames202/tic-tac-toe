@@ -40,9 +40,13 @@ button{
     border-radius: 7px;
 }
 
+button:hover, 
+input:hover{
+    filter: brightness(90%);
+}
+
 button:hover{
     cursor: pointer;
-    filter: brightness(90%);
 }
 
 .header-bar{
@@ -150,6 +154,15 @@ p{
 /*So user cant click cells after round ends*/
 .noClick {
     pointer-events: none;
+}
+
+.fadeText{
+    animation: fadeIn 1s;
+}
+
+@keyframes fadeIn{
+    from { opacity: 0 } 
+    to { opacity: 1 } 
 }
 
 
