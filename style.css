@@ -182,6 +182,11 @@ p{
     animation: blink normal 0.7s infinite ease-in-out;
 }
 
+a{
+    color: inherit;
+    text-decoration: none;
+}
+
 @keyframes fadeIn{
     from { opacity: 0 } 
     to { opacity: 1 } 
