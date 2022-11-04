@@ -1,5 +1,5 @@
 /**factory function */
-const Player = (marker, name) => {
+const Player = (marker, name, cpu = false) => {
 
     if(!name.trim()){
         name = "Anonymous";
@@ -19,7 +19,9 @@ const Player = (marker, name) => {
         _wins = 0;
     }
 
-    return {marker, name, incrementWins, getWins, resetWins};
+
+
+    return {marker, name, incrementWins, getWins, resetWins, cpu};
 };
 
 /**module */
@@ -31,6 +33,11 @@ let GameBoard = (function() {
     let _gameBoard = [];
     let _moveCount = 0;
     let _ties = 0;
+
+    //Timeout id's
+    let _compXReset;
+    let _compOReset;
+    let _roundReset;
     //TODO: Give winning cells an effect on win
     let _winningCellsX = [];
     let _winningCellsO = [];
@@ -53,49 +60,67 @@ let GameBoard = (function() {
     }
 
 
-    function _addCellListeners(playerMarker){ 
-        _gameBoard.forEach((row) =>{
-            row.forEach((cell) =>{
-                //Test if cell has x or o in it already
-                if(playerMarker === "X"){
-                    cell.removeEventListener('click', _placeO);
-                    cell.addEventListener('click', _placeX);         
-                } else if(playerMarker === "O"){
-                    cell.removeEventListener('click', _placeX);
-                    cell.addEventListener('click', _placeO);
-                }
+    function _addCellListeners(player){ 
+
+        if (_checkWinner()){
+            return;
+        }
+
+        _showCurrentPlayer(player);
+
+        if(_moveCount >= 5){
+            _checkWinner();
+        }
+
+        if(player.cpu === false){
+            _gameBoard.forEach((row) =>{
+                row.forEach((cell) =>{
+                    if(player.marker === "X"){
+                        cell.removeEventListener('click', _placeO);
+                        cell.addEventListener('click', _placeX);         
+                    } else if(player.marker === "O"){
+                        cell.removeEventListener('click', _placeX);
+                        cell.addEventListener('click', _placeO);
+                    }
+                });
             });
-        });
+        } else {
+            _computerChoice(player);
+        }
+
     }
 
     function _placeX(){     
         if(!this.innerText){
             this.innerText = "X";
-            _addCellListeners("O");
+            this.classList.add("noClick");
             _moveCount++;
-            _showCurrentPlayer(_playerO);
+            
         }
-   
-
-        if(_moveCount >= 5){
-            _checkWinner();
-        }
+            if(!_checkWinner()){
+                _addCellListeners(_playerO);
+            }
     }
 
     function _placeO(){
         if(!this.innerText){
             this.innerText = "O";
-            _addCellListeners("X");
+            this.classList.add("noClick");
             _moveCount++;
-            _showCurrentPlayer(_playerX);
         }
 
-        if (_moveCount >= 5){
-            _checkWinner();
+        if(!_checkWinner()){
+            _addCellListeners(_playerX);
         }
+            
+ 
     }
 
     function _checkWinner(){
+        if(_moveCount < 5){
+            return;
+        }
+
         let playerXCount;
         let playerOCount;
         let winnerFound = false;
@@ -178,20 +203,23 @@ let GameBoard = (function() {
 
         //Print and return winner
         if(playerXCount === 3){
-            _printGameResult(_playerX.name);
+            _printGameResult(_playerX);
             _playerX.incrementWins();
             _updateScore();
             _restartRound();
+            return true;
         } else if(playerOCount === 3) { 
-            _printGameResult(_playerO.name);
+            _printGameResult(_playerO);
            _playerO.incrementWins();
            _updateScore();
             _restartRound();
+            return true;
         } else if (_moveCount === 9){
             _printGameResult("tie");
             _restartRound();
             _ties++;
             _updateScore();
+            return true;
         }
     }
 
@@ -205,53 +233,47 @@ let GameBoard = (function() {
         const playerOWins = document.querySelector(".playerO-wins");
         const ties = document.querySelector(".ties");
 
-        playerXWins.innerText = `${_playerX.name}: ${_playerX.getWins()}`;
-        playerOWins.innerText = `${_playerO.name}: ${_playerO.getWins()}`;
+        playerXWins.innerText = `${_playerX.name} (${_playerX.marker}): ${_playerX.getWins()}`;
+        playerOWins.innerText = `${_playerO.name} (${_playerO.marker}): ${_playerO.getWins()}`;
         ties.innerText = `Ties: ${_ties}`;
     }
 
     function _printGameResult(result){
         const displayResult = document.querySelector(".game-status");
 
-        if(result === "tie"){
+        if(result === "tie"){ 
             displayResult.innerText = `It's a tie!`;
             return;
         }
 
         //Print winner of round
-        displayResult.innerText = `${result} Wins!`;
+        displayResult.innerText = `${result.name} (${result.marker}) Wins!`;
     }
 
     function _restartRound(){
         _moveCount = 0;
         const cells = document.querySelectorAll("[class*= 'cell']");
-        
+
         cells.forEach((cell) => {
             cell.classList.add("noClick");
         });
 
-        _moveCount = 0;
-
         //Wait 2 seconds before starting next round
-        setTimeout(() => {
-            _gameBoard.forEach((row) => {
-                row.forEach((cell) => {
+            _roundReset = setTimeout(() => {
+                cells.forEach((cell) => {
                     cell.innerText = "";
-                    _showCurrentPlayer(_playerX);
-                    _addCellListeners(_playerX.marker);
-                    cells.forEach((cell) => {
-                        cell.classList.remove("noClick");
-                    });
-                });
-            });
-        }, 2000);
+                    cell.classList.remove("noClick");
+                })
+                _addCellListeners(_playerX);
 
-    
+  
+            }, 2000);
+
     }
 
-    function _createPlayers(name1, name2){
-        _playerX = Player("X", name1);
-        _playerO = Player("O", name2);
+    function _createPlayers(name1, name2, cpu1, cpu2){
+        _playerX = Player("X", name1, cpu1);
+        _playerO = Player("O", name2, cpu2);
     }
 
     function _restartGame(){
@@ -266,9 +288,22 @@ let GameBoard = (function() {
             });
         });
 
+        //Clear settimeout methods via id
+        clearTimeout(_compXReset);
+        clearTimeout(_compOReset);
+        clearTimeout(_roundReset);
+
+        //Create new player objects as prototypes 
+        newPlayerX = Object.create(_playerX);
+        newPlayerO = Object.create(_playerO);
+
+        //Set current objects as new prototypes, creating new timeout instances of EVERYTHING (including set timeout methods)
+        _playerX = newPlayerX;
+        _playerO = newPlayerO;
+
         _updateScore();
-        _addCellListeners(_playerX.marker);
-        _showCurrentPlayer(_playerX);
+        _addCellListeners(_playerX);
+
     }
 
     function _displayGame(){
@@ -276,19 +311,69 @@ let GameBoard = (function() {
         const gameDetails = document.querySelector(".game-details");
         const playerMenu = document.querySelector(".player-menu");
         const restartButton = document.querySelector(".restart-button");
+        
         const name1 = document.querySelector("#player1-name").value;
         const name2 = document.querySelector("#player2-name").value;
+        const player1CPU = document.querySelector("#player1-cpu").checked;
+        const player2CPU = document.querySelector("#player2-cpu").checked;
 
         //Add input fields and hide them on game start
         gameBoard.style.visibility = "visible";
-        gameDetails.style.display = "block"
-        playerMenu.style.display= "none"
+        gameDetails.style.display = "block";
+        playerMenu.style.display= "none";
         restartButton.style.display = "block";
-        _createPlayers(name1 ,name2);
-        _showCurrentPlayer(_playerX);
-        _addCellListeners(_playerX.marker);
+        _createPlayers(name1 ,name2, player1CPU, player2CPU);
+        _addCellListeners(_playerX);
         _updateScore();
 
+    }
+
+    function _computerChoice(player){
+
+        const gameBoard = document.querySelector(".gameboard");
+        
+        const cellText = document.createElement("div");
+        cellText.classList.add("fadeText");
+
+        let cell = _gameBoard[ _getRandomNum()][_getRandomNum()];
+        let invalidCell = true;
+
+        while(invalidCell){
+            if(!cell.innerText){
+                cellText.innerText = player.marker;
+                cell.appendChild(cellText);
+                cell.classList.add("noClick");
+                gameBoard.classList.add("noClick");
+                _moveCount++;
+                invalidCell = false;
+            } else { 
+                cell = _gameBoard[ _getRandomNum()][_getRandomNum()];
+            }
+        }
+         
+
+        if(player.marker === "X"){
+            _compOReset =setTimeout(() => {
+                _addCellListeners(_playerO);
+                cell.removeChild(cellText);
+                cell.innerText = player.marker;
+                gameBoard.classList.remove("noClick");
+                _OReset = true;
+            }, 1000);
+        }else {
+             _compXReset = setTimeout(() => {
+                _addCellListeners(_playerX);
+                cell.removeChild(cellText);
+                cell.innerText = player.marker;
+                gameBoard.classList.remove("noClick");
+                _XReset = true;
+            }, 1000)
+        }
+
+    }
+
+    function _getRandomNum(){
+        return Math.floor(Math.random() * 3);
     }
 
     function playGame(){
@@ -303,11 +388,10 @@ let GameBoard = (function() {
 GameBoard.playGame();
 
 /**
- * Commit along the way
+ * Let player pick between playing against person and AI
+ * Commit 
  * Add effect to cells that containing winning markers
- * Add button to restart game
- * Commit along the way
- * Let play pick between playing against person and AI
+ * Commit 
  */
 
 
