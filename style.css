@@ -17,7 +17,7 @@ body{
     flex-direction: column;
 }
 
-input, 
+input:not([type="checkbox"]), 
 button{
     appearance: none;
     border-style: none;
@@ -68,6 +68,20 @@ button:hover{
     display: flex; 
     flex-direction: column;
     gap: 10px;
+}
+
+.player-menu > div > div {
+    display: inline;
+}
+
+label[for*="cpu"]{
+    position: relative;
+}
+
+input[type="checkbox"]{
+    position: absolute;
+    bottom: 1px;
+    width: 16px;
 }
 
 .start-button{
@@ -156,13 +170,34 @@ p{
     pointer-events: none;
 }
 
+.noClick-permanent{
+    pointer-events: none;
+}
+
 .fadeText{
     animation: fadeIn 1s;
+}
+
+.blinkCell{
+    animation: blink normal 0.7s infinite ease-in-out;
 }
 
 @keyframes fadeIn{
     from { opacity: 0 } 
     to { opacity: 1 } 
+}
+
+
+@keyframes blink {
+    0% {
+           background-color: rgb(116, 238, 79)
+    }
+    50% {
+           background-color: rgba(116, 238, 79,0.5)
+    }
+    100% {
+           background-color: rgba(116, 238, 79,1)
+    }
 }
 
 
