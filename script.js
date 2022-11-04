@@ -38,9 +38,7 @@ let GameBoard = (function() {
     let _compXReset;
     let _compOReset;
     let _roundReset;
-    //TODO: Give winning cells an effect on win
-    let _winningCellsX = [];
-    let _winningCellsO = [];
+    let _blinkingCells;
 
     function _createGameBoard(){
          const row1 = document.querySelectorAll(".row-1 > [class*='cell']");
@@ -125,6 +123,9 @@ let GameBoard = (function() {
         let playerOCount;
         let winnerFound = false;
 
+        let winningCellsX = [];
+        let winningCellsO = [];
+
         function countOccurrences(){
             winnerFound = playerXCount === 3 || playerOCount === 3 ? true : false;
         }
@@ -133,11 +134,16 @@ let GameBoard = (function() {
         for (let i = 0; i < _gameBoard.length && winnerFound === false; i++){
             playerXCount = 0;
             playerOCount = 0;
+            winningCellsX = [];
+            winningCellsO = []; 
+
             _gameBoard[i].forEach((cell) => {
                 if(cell.innerText === 'X'){
                     playerXCount++;
+                    winningCellsX.push(cell);
                 } else if (cell.innerText === 'O'){
                     playerOCount++;
+                    winningCellsO.push(cell);
                 }
             });
 
@@ -149,15 +155,18 @@ let GameBoard = (function() {
         for (let i = 0; i < _gameBoard.length && winnerFound === false; i++){
             playerXCount = 0;
             playerOCount = 0;
-            
+            winningCellsX = [];
+            winningCellsO = []; 
+
             //Row control
             for (let n = 0; n < _gameBoard.length; n++){
 
                 if(_gameBoard[n][i].innerText === "X"){
                     playerXCount++
-    
+                    winningCellsX.push(_gameBoard[n][i]);
                 } else if(_gameBoard[n][i].innerText === "O"){
                     playerOCount++;
+                    winningCellsO.push(_gameBoard[n][i]);
                 }
             }
             
@@ -169,36 +178,43 @@ let GameBoard = (function() {
        if(winnerFound === false){
             playerXCount = 0;
             playerOCount = 0;
+            winningCellsX = [];
+            winningCellsO = []; 
        }
+
         for(let i = 0; i < _gameBoard.length && winnerFound === false; i++){
             if(_gameBoard[i][i].innerText === "X"){
                 playerXCount++;
+                winningCellsX.push(_gameBoard[i][i]);
             } else if (_gameBoard[i][i].innerText === "O"){
                 playerOCount++;
+                winningCellsO.push(_gameBoard[i][i]);
             }
         }
 
-        //Check for right diagonal winner
-        if(playerXCount === 3 || playerOCount === 3){
-            winnerFound = true;
-        }
+        countOccurrences();
+
 
         //Check left diagonal
-        if(winnerFound === false){
+        if(winnerFound === false) {
             playerXCount = 0;
             playerOCount = 0;
+            winningCellsX = [];
+            winningCellsO = []; 
         }
-        
+
         for(let i = 0; i < _gameBoard.length && winnerFound === false; i++){
             if(_gameBoard[i][Math.abs(i - 2)].innerText === "X"){
                 playerXCount++;
-                //Move over to the left one cell on each iteration
+                winningCellsX.push(_gameBoard[i][Math.abs(i - 2)]);
+                //Move over to the left one column on each iteration
             } else if (_gameBoard[i][Math.abs(i - 2)].innerText === "O"){
                 playerOCount++;
+                winningCellsO.push(_gameBoard[i][Math.abs(i - 2)]);
             }
         }
             
-           countOccurrences();
+        countOccurrences();
 
 
         //Print and return winner
@@ -206,13 +222,15 @@ let GameBoard = (function() {
             _printGameResult(_playerX);
             _playerX.incrementWins();
             _updateScore();
+            _showWinningCells(winningCellsX);
             _restartRound();
             return true;
         } else if(playerOCount === 3) { 
             _printGameResult(_playerO);
            _playerO.incrementWins();
            _updateScore();
-            _restartRound();
+           _showWinningCells(winningCellsO);
+           _restartRound();
             return true;
         } else if (_moveCount === 9){
             _printGameResult("tie");
@@ -225,7 +243,7 @@ let GameBoard = (function() {
 
     function _showCurrentPlayer(player){
         const displayPlayer = document.querySelector(".game-status");
-        displayPlayer.innerText = `${player.name} (${player.marker})'s Turn`;
+        displayPlayer.innerText = `${player.name} (${player.marker}) ${player.cpu ? "(A.I)" : ""}'s Turn`;
     }
 
     function _updateScore(){
@@ -233,8 +251,8 @@ let GameBoard = (function() {
         const playerOWins = document.querySelector(".playerO-wins");
         const ties = document.querySelector(".ties");
 
-        playerXWins.innerText = `${_playerX.name} (${_playerX.marker}): ${_playerX.getWins()}`;
-        playerOWins.innerText = `${_playerO.name} (${_playerO.marker}): ${_playerO.getWins()}`;
+        playerXWins.innerText = `${_playerX.name} (${_playerX.marker}) ${_playerX.cpu ? "(A.I):" : ":"} ${_playerX.getWins()}`;
+        playerOWins.innerText = `${_playerO.name} (${_playerO.marker}) ${_playerO.cpu ? "(A.I):" : ":"} ${_playerO.getWins()}`;
         ties.innerText = `Ties: ${_ties}`;
     }
 
@@ -274,6 +292,11 @@ let GameBoard = (function() {
     function _createPlayers(name1, name2, cpu1, cpu2){
         _playerX = Player("X", name1, cpu1);
         _playerO = Player("O", name2, cpu2);
+
+        if (cpu1 && cpu2){
+            const gameBoard = document.querySelector(".gameboard");
+            gameBoard.classList.add("noClick-permanent");
+        }
     }
 
     function _restartGame(){
@@ -285,6 +308,8 @@ let GameBoard = (function() {
         _gameBoard.forEach((row) => {
             row.forEach((cell) => {
                 cell.innerText = "";
+                cell.classList.remove("blinkCell");
+                cell.classList.remove("noClick");
             });
         });
 
@@ -292,6 +317,7 @@ let GameBoard = (function() {
         clearTimeout(_compXReset);
         clearTimeout(_compOReset);
         clearTimeout(_roundReset);
+        clearTimeout(_blinkingCells);
 
         //Create new player objects as prototypes 
         newPlayerX = Object.create(_playerX);
@@ -374,6 +400,18 @@ let GameBoard = (function() {
 
     function _getRandomNum(){
         return Math.floor(Math.random() * 3);
+    }
+
+    function _showWinningCells(cells){
+        cells.forEach((cell) =>{
+            cell.classList.add("blinkCell")
+        });
+
+        _blinkingCells = setTimeout(() => {
+            cells.forEach((cell) =>{
+                cell.classList.remove("blinkCell")
+            });
+        },2000);
     }
 
     function playGame(){
