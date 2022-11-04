@@ -265,7 +265,7 @@ let GameBoard = (function() {
         }
 
         //Print winner of round
-        displayResult.innerText = `${result.name} (${result.marker}) Wins!`;
+        displayResult.innerText = `${result.name} (${result.marker}) ${result.cpu ? "(A.I)" : ""} Wins!`;
     }
 
     function _restartRound(){
