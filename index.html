@@ -16,16 +16,27 @@
         <div class="player-menu">
             <div>
                 <label for="player1-name">Player 1 Name (X):</label>
-                <input type="text" name="player1-name" id="player1-name" placeholder="Name">
+                <input type="text" name="player1-name" id="player1-name" placeholder="Name" autocomplete="off">
+                <div>
+                    <label for="player1-cpu">
+                        A.I?
+                        <input type="checkbox" name="player1-cpu" id="player1-cpu">
+                    </label>
+                </div>
             </div>
             
             <div>
                 <label for="player2-name">Player 2 Name (O):</label>
-                <input type="text" name="player2-name" id="player2-name" placeholder="Name">
+                <input type="text" name="player2-name" id="player2-name" placeholder="Name" autocomplete="off">
+                <div>
+                    <label for="player2-cpu">
+                        A.I?
+                        <input type="checkbox" name="player2-cpu" id="player2-cpu">
+                    </label>     
+                </div>
             </div>
             <button class="start-button">Start Game</button>
         </div>   
-        <!--Turn this into div containing player turn, wins and ties-->
         <div class="game-details">
             <div class="scoreboard">
                 <p>Score</p>
