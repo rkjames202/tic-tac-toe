@@ -170,6 +170,7 @@ p{
     pointer-events: none;
 }
 
+/* Only added when both players are A.I's*/
 .noClick-permanent{
     pointer-events: none;
 }
